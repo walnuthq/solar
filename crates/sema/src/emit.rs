@@ -1,4 +1,4 @@
-use crate::ty::Gcx;
+use crate::{ethdebug, ty::Gcx};
 use serde::Serialize;
 use solar_interface::config::CompilerOutput;
 use std::{
@@ -11,6 +11,8 @@ use std::{
 struct CombinedJson {
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     contracts: BTreeMap<String, CombinedJsonContract>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ethdebug: Option<ethdebug::schema::Resources>,
     version: &'static str,
 }
 
@@ -20,16 +22,22 @@ struct CombinedJsonContract {
     abi: Option<Abi>,
     #[serde(skip_serializing_if = "Option::is_none")]
     hashes: Option<Hashes>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ethdebug: Option<ethdebug::schema::Program>,
 }
 
 type Abi = Vec<alloy_json_abi::AbiItem<'static>>;
 type Hashes = BTreeMap<String, String>;
 
 pub(crate) fn emit(gcx: Gcx<'_>) {
+    let emit_ethdebug = gcx.sess.opts.emit.contains(&CompilerOutput::EthDebug);
+
     let mut output = CombinedJson {
         contracts: Default::default(),
+        ethdebug: if emit_ethdebug { Some(ethdebug::resources(gcx)) } else { None },
         version: solar_interface::config::version::SEMVER_VERSION,
     };
+
     for id in gcx.hir.contract_ids() {
         let name = gcx.contract_fully_qualified_name(id).to_string();
         let contract_output = output.contracts.entry(name).or_default();
@@ -46,7 +54,10 @@ pub(crate) fn emit(gcx: Gcx<'_>) {
                     }
                     contract_output.hashes = Some(hashes);
                 }
-                emit => todo!("{emit:?}"),
+                CompilerOutput::EthDebug => {
+                    contract_output.ethdebug = Some(ethdebug::contract_program(gcx, id));
+                }
+                _ => {}
             }
         }
     }

@@ -152,6 +152,8 @@ str_enum! {
         // BinRuntime,
         /// Function signature hashes.
         Hashes,
+        /// ETHDebug format debug information.
+        EthDebug,
     }
 }
 

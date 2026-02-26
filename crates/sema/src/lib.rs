@@ -41,6 +41,8 @@ mod typeck;
 
 mod emit;
 
+pub mod ethdebug;
+
 pub mod stats;
 
 mod span_visitor;

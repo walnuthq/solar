@@ -34,7 +34,7 @@ Options:
       --emit <EMIT>
           Comma separated list of types of output for the compiler to emit
           
-          [possible values: abi, hashes]
+          [possible values: abi, hashes, eth-debug]
 
   -Z <FLAG>
           Unstable flags. WARNING: these are completely unstable, and may change at any time.
