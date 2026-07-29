@@ -1337,8 +1337,7 @@ impl<'gcx> Lowerer<'gcx> {
                         MemoryObjectKind::Struct,
                     );
                     builder.mstore(offset_val, value);
-                } else if let Some(value) = self.lower_default_variable_value(&mut builder, ret_id)
-                {
+                } else if let Some(value) = self.lower_default_return_value(&mut builder, ret_id) {
                     builder.mstore(offset_val, value);
                 }
             }
@@ -1374,7 +1373,7 @@ impl<'gcx> Lowerer<'gcx> {
                                 builder.mload(offset_val)
                             }
                         } else if let Some(value) =
-                            self.lower_default_variable_value(&mut builder, ret_id)
+                            self.lower_default_return_value(&mut builder, ret_id)
                         {
                             value
                         } else {
