@@ -65,6 +65,23 @@ impl SpillManager {
         slot
     }
 
+    /// Allocates a specific function-stable offset for a value.
+    ///
+    /// Multiple values may use the same offset when their live ranges do not overlap. This must
+    /// run before lazily allocated slots are assigned.
+    pub(crate) fn allocate_at(&mut self, value: ValueId, offset: u32) -> SpillSlot {
+        if let Some(&slot) = self.slots.get(&value) {
+            debug_assert_eq!(slot.offset, offset);
+            return slot;
+        }
+
+        let slot = SpillSlot { offset };
+        self.slots.insert(value, slot);
+        self.next_offset = self.next_offset.max(offset + 1);
+        self.max_offset = self.max_offset.max(offset + 1);
+        slot
+    }
+
     /// Returns the spill slot for a value, if one exists.
     #[must_use]
     pub(crate) fn get(&self, value: ValueId) -> Option<SpillSlot> {
@@ -152,6 +169,21 @@ mod tests {
 
         assert_eq!(slot1, slot2);
         assert_eq!(manager.get(v0), Some(slot1));
+    }
+
+    #[test]
+    fn test_allocations_can_share_an_offset() {
+        let mut manager = SpillManager::new();
+        let v0 = ValueId::from_usize(0);
+        let v1 = ValueId::from_usize(1);
+        let local = ValueId::from_usize(2);
+
+        let slot0 = manager.allocate_at(v0, 0);
+        let slot1 = manager.allocate_at(v1, 0);
+
+        assert_eq!(slot0, slot1);
+        assert_eq!(manager.spill_area_size(), 32);
+        assert_eq!(manager.allocate(local).offset, 1);
     }
 
     #[test]
